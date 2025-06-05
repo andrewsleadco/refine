@@ -6,22 +6,22 @@ import { Slider } from "@/components/ui/slider";
 
 interface SearchFiltersProps {
   industries: string[];
-  regions: string[];
+  locations: string[]; // <- renamed
   selectedIndustries: string[];
   setSelectedIndustries: (v: string[]) => void;
-  selectedRegions: string[];
-  setSelectedRegions: (v: string[]) => void;
+  selectedLocations: string[]; // <- renamed
+  setSelectedLocations: (v: string[]) => void;
   companySize: [number, number];
   setCompanySize: (v: [number, number]) => void;
 }
 
 export default function SearchFilters({
   industries,
-  regions,
+  locations,
   selectedIndustries,
   setSelectedIndustries,
-  selectedRegions,
-  setSelectedRegions,
+  selectedLocations,
+  setSelectedLocations,
   companySize,
   setCompanySize,
 }: SearchFiltersProps) {
@@ -34,11 +34,11 @@ export default function SearchFilters({
     }
   }
 
-  function handleRegionChange(region: string, checked: boolean) {
+  function handleLocationChange(location: string, checked: boolean) {
     if (checked) {
-      setSelectedRegions([...selectedRegions, region]);
+      setSelectedLocations([...selectedLocations, location]);
     } else {
-      setSelectedRegions(selectedRegions.filter((item: string) => item !== region));
+      setSelectedLocations(selectedLocations.filter((item: string) => item !== location));
     }
   }
 
@@ -62,19 +62,19 @@ export default function SearchFilters({
         </div>
       </div>
 
-      {/* Region filter */}
+      {/* Location filter */}
       <div>
-        <div className="font-semibold mb-2">Region</div>
+        <div className="font-semibold mb-2">Location</div>
         <div className="space-y-1">
-          {regions.map((region) => (
-            <label key={region} className="flex items-center gap-2 cursor-pointer">
+          {locations.map((location) => (
+            <label key={location} className="flex items-center gap-2 cursor-pointer">
               <Checkbox
-                checked={selectedRegions.includes(region)}
+                checked={selectedLocations.includes(location)}
                 onCheckedChange={(checked: boolean) =>
-                  handleRegionChange(region, checked)
+                  handleLocationChange(location, checked)
                 }
               />
-              <span>{region}</span>
+              <span>{location}</span>
             </label>
           ))}
         </div>

@@ -10,7 +10,8 @@ import {
   ChevronDown, 
   CheckCircle2, 
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Users
 } from "lucide-react";
 import {
   Table,
@@ -41,13 +42,13 @@ import {
 
 interface Company {
   id: number;
-  company: string;
+  name: string;                // <- updated
   website: string;
   industry: string;
   location: string;
   size: string;
   contacts: number;
-  verificationScore: number;
+  verificationScore?: number;  // <- optional
 }
 
 interface SearchResultsProps {
@@ -122,30 +123,34 @@ export default function SearchResults({ results }: SearchResultsProps) {
         </TableHeader>
         <TableBody>
           {results.map((company) => (
-            <>
-              <TableRow key={company.id} className="cursor-pointer hover:bg-muted/50">
+            <span key={company.id}>
+              <TableRow className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="font-medium" onClick={() => openCompanyDetails(company)}>
                   <div className="flex items-center">
                     <Avatar className="h-9 w-9 mr-3 bg-primary/10">
-                      <AvatarFallback className="text-primary">{company.company.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="text-primary">
+                        {company.name ? company.name.charAt(0) : "?"}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div>{company.company}</div>
+                      <div>{company.name || "—"}</div>
                       <div className="text-sm text-muted-foreground flex items-center">
-                        {company.website}
-                        <ExternalLink className="ml-1 h-3 w-3" />
+                        {company.website || "—"}
+                        {company.website && (
+                          <ExternalLink className="ml-1 h-3 w-3" />
+                        )}
                       </div>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="hidden md:table-cell">{company.industry}</TableCell>
-                <TableCell className="hidden md:table-cell">{company.location}</TableCell>
-                <TableCell className="hidden lg:table-cell">{company.size}</TableCell>
-                <TableCell className="text-center">{company.contacts}</TableCell>
+                <TableCell className="hidden md:table-cell">{company.industry || "—"}</TableCell>
+                <TableCell className="hidden md:table-cell">{company.location || "—"}</TableCell>
+                <TableCell className="hidden lg:table-cell">{company.size || "—"}</TableCell>
+                <TableCell className="text-center">{company.contacts ?? 0}</TableCell>
                 <TableCell>
                   <div className="flex justify-center items-center">
-                    <div className={`font-medium ${getScoreColor(company.verificationScore)}`}>
-                      {company.verificationScore}%
+                    <div className={`font-medium ${getScoreColor(company.verificationScore ?? 0)}`}>
+                      {company.verificationScore !== undefined ? `${company.verificationScore}%` : "—"}
                     </div>
                   </div>
                 </TableCell>
@@ -208,7 +213,7 @@ export default function SearchResults({ results }: SearchResultsProps) {
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </span>
           ))}
         </TableBody>
       </Table>
@@ -218,7 +223,7 @@ export default function SearchResults({ results }: SearchResultsProps) {
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">
-              {selectedCompany?.company}
+              {selectedCompany?.name}
               <Badge variant="outline" className="ml-2">
                 {selectedCompany?.industry}
               </Badge>
@@ -226,7 +231,7 @@ export default function SearchResults({ results }: SearchResultsProps) {
             <DrawerDescription>
               <a href={`https://${selectedCompany?.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center hover:underline">
                 {selectedCompany?.website}
-                <ExternalLink className="ml-1 h-3 w-3" />
+                {selectedCompany?.website && <ExternalLink className="ml-1 h-3 w-3" />}
               </a>
             </DrawerDescription>
           </DrawerHeader>
@@ -262,14 +267,16 @@ export default function SearchResults({ results }: SearchResultsProps) {
                     <div className="bg-muted rounded-lg p-4">
                       <div className="text-sm text-muted-foreground mb-1">Verification Score</div>
                       <div className="flex items-center mb-2">
-                        <div className={`text-lg font-medium ${getScoreColor(selectedCompany.verificationScore)}`}>
-                          {selectedCompany.verificationScore}%
+                        <div className={`text-lg font-medium ${getScoreColor(selectedCompany.verificationScore ?? 0)}`}>
+                          {selectedCompany.verificationScore !== undefined
+                            ? `${selectedCompany.verificationScore}%`
+                            : "—"}
                         </div>
                       </div>
                       <Progress
-                        value={selectedCompany.verificationScore}
+                        value={selectedCompany.verificationScore ?? 0}
                         className="h-2"
-                        indicatorClassName={getScoreBg(selectedCompany.verificationScore)}
+                        indicatorClassName={getScoreBg(selectedCompany.verificationScore ?? 0)}
                       />
                     </div>
                     

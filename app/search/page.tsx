@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  Download, 
-  SlidersHorizontal, 
-  Filter, 
-  ArrowUpDown, 
+import {
+  Search,
+  Download,
+  SlidersHorizontal,
+  Filter,
+  ArrowUpDown,
   Check,
 } from "lucide-react";
 import {
@@ -33,7 +33,6 @@ import SearchFilters from "@/components/search/search-filters";
 import SearchResults from "@/components/search/search-results";
 import { supabase } from "@/lib/supabaseClient";
 
-// List these at the top so you can easily pass them to SearchFilters
 const ALL_INDUSTRIES = [
   "Software & IT",
   "Financial Services",
@@ -49,7 +48,8 @@ const ALL_INDUSTRIES = [
   "Energy & Utilities",
 ];
 
-const ALL_REGIONS = [
+// Rename ALL_REGIONS to ALL_LOCATIONS for clarity if you want
+const ALL_LOCATIONS = [
   "North America",
   "Europe",
   "Asia Pacific",
@@ -60,7 +60,7 @@ const ALL_REGIONS = [
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [companySize, setCompanySize] = useState<[number, number]>([10, 1000]);
   const [activeTab, setActiveTab] = useState("results");
   const [results, setResults] = useState<any[]>([]);
@@ -71,41 +71,52 @@ export default function SearchPage() {
     async function fetchResults() {
       setLoading(true);
 
-      let query = supabase
+     
+      const { data, error } = await supabase
         .from("companies")
-        .select(
-          `id, name, website, industry, location, size, verification_score, people!companies_id_fkey(count)`
-        );
+        .select("id, name, website, industry, location, size, people(id)");
 
-      // Filters!
-      if (searchTerm.trim()) {
-        query = query.ilike("name", `%${searchTerm.trim()}%`);
-      }
-      if (selectedIndustries.length > 0) {
-        query = query.in("industry", selectedIndustries);
-      }
-      if (selectedRegions.length > 0) {
-        query = query.in("region", selectedRegions);
-      }
-      if (companySize) {
-        // Assume size is a string like "50-100" unless you store as number min/max
-        // Adjust as needed
-      }
-
-      const { data, error } = await query;
       setLoading(false);
+
       if (error) {
         setResults([]);
+        console.error("Supabase error", error);
         return;
       }
-      setResults(data ?? []);
+
+      // 2. JS Filtering (to avoid 400s and fit your schema)
+      let filtered = (data ?? []).map((row) => ({
+        ...row,
+        contacts: row.people ? row.people.length : 0,
+      }));
+
+      // Industry filter
+      if (selectedIndustries.length > 0) {
+        filtered = filtered.filter((row) =>
+          selectedIndustries.includes(row.industry)
+        );
+      }
+      // Location filter (instead of region)
+      if (selectedLocations.length > 0) {
+        filtered = filtered.filter((row) =>
+          selectedLocations.includes(row.location)
+        );
+      }
+      // Search filter
+      if (searchTerm.trim()) {
+        const term = searchTerm.trim().toLowerCase();
+        filtered = filtered.filter(
+          (row) =>
+            row.name?.toLowerCase().includes(term) ||
+            row.industry?.toLowerCase().includes(term) ||
+            row.website?.toLowerCase().includes(term)
+        );
+      }
+      // Company size filter (skipped here; adjust if size is number)
+      setResults(filtered);
     }
     fetchResults();
-  }, [searchTerm, selectedIndustries, selectedRegions, companySize]);
-
-  // For region/industry filters, make sure to pass state/setters down to SearchFilters.
-  // You might need to update your SearchFilters to accept and use these.
-  // (If SearchFilters is still self-contained, move all state up here and pass as props!)
+  }, [searchTerm, selectedIndustries, selectedLocations, companySize]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +131,7 @@ export default function SearchPage() {
           <p className="text-muted-foreground mb-6">
             Find, verify, and enrich B2B leads that match your exact criteria
           </p>
-          
+
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -135,7 +146,7 @@ export default function SearchPage() {
           </form>
         </div>
       </div>
-      
+
       <div className="container mx-auto px-4 py-8 md:px-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Filters sidebar - hidden on mobile */}
@@ -145,20 +156,20 @@ export default function SearchPage() {
                 <Filter className="mr-2 h-4 w-4" />
                 Filters
               </h2>
-              
+
               <SearchFilters
                 industries={ALL_INDUSTRIES}
-                regions={ALL_REGIONS}
+                locations={ALL_LOCATIONS}
                 selectedIndustries={selectedIndustries}
                 setSelectedIndustries={setSelectedIndustries}
-                selectedRegions={selectedRegions}
-                setSelectedRegions={setSelectedRegions}
+                selectedLocations={selectedLocations}
+                setSelectedLocations={setSelectedLocations}
                 companySize={companySize}
                 setCompanySize={setCompanySize}
               />
             </div>
           </div>
-          
+
           {/* Main content area */}
           <div className="flex-1">
             {/* Mobile filters */}
@@ -177,11 +188,11 @@ export default function SearchPage() {
                   <div className="p-4">
                     <SearchFilters
                       industries={ALL_INDUSTRIES}
-                      regions={ALL_REGIONS}
+                      locations={ALL_LOCATIONS}
                       selectedIndustries={selectedIndustries}
                       setSelectedIndustries={setSelectedIndustries}
-                      selectedRegions={selectedRegions}
-                      setSelectedRegions={setSelectedRegions}
+                      selectedLocations={selectedLocations}
+                      setSelectedLocations={setSelectedLocations}
                       companySize={companySize}
                       setCompanySize={setCompanySize}
                     />
@@ -194,7 +205,7 @@ export default function SearchPage() {
                   </DrawerFooter>
                 </DrawerContent>
               </Drawer>
-              
+
               <Select>
                 <SelectTrigger>
                   <SelectValue placeholder="Sort by: Relevance" />
@@ -208,14 +219,14 @@ export default function SearchPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* Results & Tools bar */}
             <div className="bg-background rounded-lg border mb-4">
               <div className="p-4 flex justify-between items-center">
                 <div className="text-sm text-muted-foreground">
                   Showing <span className="font-medium text-foreground">{results.length}</span> results
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Popover>
                     <PopoverTrigger asChild>
@@ -245,7 +256,7 @@ export default function SearchPage() {
                       </div>
                     </PopoverContent>
                   </Popover>
-                  
+
                   <Button variant="outline" size="sm">
                     <Download className="mr-2 h-4 w-4" />
                     Export
@@ -253,27 +264,27 @@ export default function SearchPage() {
                 </div>
               </div>
             </div>
-            
+
             {/* Results tabs and content */}
             <div className="bg-background rounded-lg border overflow-hidden">
               <Tabs defaultValue="results" value={activeTab} onValueChange={setActiveTab}>
                 <div className="border-b">
                   <TabsList className="p-0 h-auto bg-transparent">
-                    <TabsTrigger 
-                      value="results" 
+                    <TabsTrigger
+                      value="results"
                       className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 py-3"
                     >
                       Results
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="saved" 
+                    <TabsTrigger
+                      value="saved"
                       className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 py-3"
                     >
                       Saved Lists
                     </TabsTrigger>
                   </TabsList>
                 </div>
-                
+
                 <TabsContent value="results" className="p-0 m-0">
                   {loading ? (
                     <div className="p-8 text-center text-muted-foreground">Loading...</div>
@@ -281,7 +292,7 @@ export default function SearchPage() {
                     <SearchResults results={results} />
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="saved" className="p-0 m-0">
                   <div className="p-8 text-center">
                     <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
