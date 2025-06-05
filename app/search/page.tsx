@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -10,10 +10,6 @@ import {
   Filter, 
   ArrowUpDown, 
   Check,
-  ChevronDown,
-  Building2,
-  Globe,
-  Users
 } from "lucide-react";
 import {
   Select,
@@ -23,14 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Drawer,
   DrawerContent,
   DrawerHeader,
@@ -39,21 +27,35 @@ import {
   DrawerFooter,
   DrawerClose,
 } from "@/components/ui/drawer";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Progress } from "@/components/ui/progress";
 import SearchFilters from "@/components/search/search-filters";
 import SearchResults from "@/components/search/search-results";
+import { supabase } from "@/lib/supabaseClient";
+
+// List these at the top so you can easily pass them to SearchFilters
+const ALL_INDUSTRIES = [
+  "Software & IT",
+  "Financial Services",
+  "Healthcare",
+  "Manufacturing",
+  "Transportation",
+  "Retail",
+  "Education",
+  "Construction",
+  "Hospitality",
+  "Professional Services",
+  "Media & Entertainment",
+  "Energy & Utilities",
+];
+
+const ALL_REGIONS = [
+  "North America",
+  "Europe",
+  "Asia Pacific",
+  "Latin America",
+  "Middle East & Africa",
+];
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -61,64 +63,53 @@ export default function SearchPage() {
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [companySize, setCompanySize] = useState<[number, number]>([10, 1000]);
   const [activeTab, setActiveTab] = useState("results");
-  
-  const mockResults = [
-    {
-      id: 1,
-      company: "Acme Technology",
-      website: "acmetech.com",
-      industry: "Software & IT",
-      location: "San Francisco, CA",
-      size: "50-100",
-      contacts: 12,
-      verificationScore: 98,
-    },
-    {
-      id: 2,
-      company: "Global Logistics Partners",
-      website: "glpartners.co",
-      industry: "Transportation",
-      location: "Chicago, IL",
-      size: "500-1000",
-      contacts: 34,
-      verificationScore: 92,
-    },
-    {
-      id: 3,
-      company: "Summit Financial Group",
-      website: "summitfg.com",
-      industry: "Financial Services",
-      location: "New York, NY",
-      size: "1000+",
-      contacts: 28,
-      verificationScore: 95,
-    },
-    {
-      id: 4,
-      company: "HealthPlus Medical Systems",
-      website: "healthplusmed.org",
-      industry: "Healthcare",
-      location: "Boston, MA",
-      size: "200-500",
-      contacts: 16,
-      verificationScore: 89,
-    },
-    {
-      id: 5,
-      company: "Eco Manufacturing Inc",
-      website: "ecomanufacturing.co",
-      industry: "Manufacturing",
-      location: "Detroit, MI",
-      size: "100-200",
-      contacts: 8,
-      verificationScore: 94,
-    },
-  ];
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Main effect to pull results from Supabase
+  useEffect(() => {
+    async function fetchResults() {
+      setLoading(true);
+
+      let query = supabase
+        .from("companies")
+        .select(
+          `id, name, website, industry, location, size, verification_score, people!companies_id_fkey(count)`
+        );
+
+      // Filters!
+      if (searchTerm.trim()) {
+        query = query.ilike("name", `%${searchTerm.trim()}%`);
+      }
+      if (selectedIndustries.length > 0) {
+        query = query.in("industry", selectedIndustries);
+      }
+      if (selectedRegions.length > 0) {
+        query = query.in("region", selectedRegions);
+      }
+      if (companySize) {
+        // Assume size is a string like "50-100" unless you store as number min/max
+        // Adjust as needed
+      }
+
+      const { data, error } = await query;
+      setLoading(false);
+      if (error) {
+        setResults([]);
+        return;
+      }
+      setResults(data ?? []);
+    }
+    fetchResults();
+  }, [searchTerm, selectedIndustries, selectedRegions, companySize]);
+
+  // For region/industry filters, make sure to pass state/setters down to SearchFilters.
+  // You might need to update your SearchFilters to accept and use these.
+  // (If SearchFilters is still self-contained, move all state up here and pass as props!)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle search
-    console.log("Searching for:", searchTerm);
+    // Triggers useEffect via searchTerm state update
   };
 
   return (
@@ -155,7 +146,16 @@ export default function SearchPage() {
                 Filters
               </h2>
               
-              <SearchFilters />
+              <SearchFilters
+                industries={ALL_INDUSTRIES}
+                regions={ALL_REGIONS}
+                selectedIndustries={selectedIndustries}
+                setSelectedIndustries={setSelectedIndustries}
+                selectedRegions={selectedRegions}
+                setSelectedRegions={setSelectedRegions}
+                companySize={companySize}
+                setCompanySize={setCompanySize}
+              />
             </div>
           </div>
           
@@ -175,10 +175,19 @@ export default function SearchPage() {
                     <DrawerTitle>Search Filters</DrawerTitle>
                   </DrawerHeader>
                   <div className="p-4">
-                    <SearchFilters />
+                    <SearchFilters
+                      industries={ALL_INDUSTRIES}
+                      regions={ALL_REGIONS}
+                      selectedIndustries={selectedIndustries}
+                      setSelectedIndustries={setSelectedIndustries}
+                      selectedRegions={selectedRegions}
+                      setSelectedRegions={setSelectedRegions}
+                      companySize={companySize}
+                      setCompanySize={setCompanySize}
+                    />
                   </div>
                   <DrawerFooter>
-                    <Button>Apply Filters</Button>
+                    <Button onClick={() => {}}>Apply Filters</Button>
                     <DrawerClose asChild>
                       <Button variant="outline">Cancel</Button>
                     </DrawerClose>
@@ -204,7 +213,7 @@ export default function SearchPage() {
             <div className="bg-background rounded-lg border mb-4">
               <div className="p-4 flex justify-between items-center">
                 <div className="text-sm text-muted-foreground">
-                  Showing <span className="font-medium text-foreground">5</span> of <span className="font-medium text-foreground">458</span> results
+                  Showing <span className="font-medium text-foreground">{results.length}</span> results
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -266,7 +275,11 @@ export default function SearchPage() {
                 </div>
                 
                 <TabsContent value="results" className="p-0 m-0">
-                  <SearchResults results={mockResults} />
+                  {loading ? (
+                    <div className="p-8 text-center text-muted-foreground">Loading...</div>
+                  ) : (
+                    <SearchResults results={results} />
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="saved" className="p-0 m-0">
