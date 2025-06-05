@@ -1,7 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { Company, Person } from "@/types/db";
 import { notFound } from "next/navigation";
-import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal, PromiseLikeOfReactNode } from "react";
 
 interface CompanyWithPeopleSelect extends Company {
   people: Person[];
@@ -13,9 +12,8 @@ export default async function CompanyPage({ params }: Props) {
   const companyId = Number(params.id);
   if (isNaN(companyId)) return notFound();
 
-  // NOTE: Use two type params and single-line select
   const { data, error } = await supabase
-    .from<Company, CompanyWithPeopleSelect>("companies")
+    .from("companies")
     .select("id, name, website, industry, location, size, people(id, first_name, last_name, title, email, phone, linkedin_url, verification_score, source)")
     .eq("id", companyId)
     .single();
@@ -25,34 +23,36 @@ export default async function CompanyPage({ params }: Props) {
     return notFound();
   }
 
+  const company = data as CompanyWithPeopleSelect;
+
   return (
     <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">{data.name}</h1>
+      <h1 className="text-2xl font-bold mb-4">{company.name}</h1>
       <p className="mb-4">
         Website:{" "}
-        {data.website ? (
+        {company.website ? (
           <a
-            href={`https://${data.website}`}
+            href={`https://${company.website}`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline text-blue-600"
           >
-            {data.website}
+            {company.website}
           </a>
         ) : (
           "—"
         )}
       </p>
-      <p className="mb-4">Industry: {data.industry ?? "—"}</p>
-      <p className="mb-4">Location: {data.location ?? "—"}</p>
-      <p className="mb-4">Size: {data.size ?? "—"}</p>
+      <p className="mb-4">Industry: {company.industry ?? "—"}</p>
+      <p className="mb-4">Location: {company.location ?? "—"}</p>
+      <p className="mb-4">Size: {company.size ?? "—"}</p>
 
       <h2 className="text-xl font-semibold mt-8 mb-4">Contacts at this company</h2>
-      {(!data.people || data.people.length === 0) ? (
+      {(!company.people || company.people.length === 0) ? (
         <p className="text-gray-500 italic">No contacts linked yet.</p>
       ) : (
         <ul className="space-y-2">
-          {data.people.map((p: { id: Key | null | undefined; first_name: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | PromiseLikeOfReactNode | null | undefined; last_name: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | PromiseLikeOfReactNode | null | undefined; title: any; email: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | PromiseLikeOfReactNode | null | undefined; }) => (
+          {company.people.map((p) => (
             <li key={p.id} className="flex items-center gap-4">
               <span>
                 {p.first_name} {p.last_name}{" "}

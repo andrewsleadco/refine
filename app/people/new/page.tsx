@@ -1,7 +1,6 @@
-// app/people/new/page.tsx
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import type { Company } from "@/types/db";
@@ -20,17 +19,16 @@ export default function NewPersonPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
 
   // 1) Load all companies for the dropdown
-  useState(() => {
+  useEffect(() => {
     supabase
-      .from<Company>("companies")
+      .from("companies")
       .select("id, name")
-      .order("name", { ascending: true })
       .then(({ data }) => {
-        if (data) setCompanies(data);
+        setCompanies((data as Company[]) ?? []);
       });
-  });
+  }, []);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const { error } = await supabase.from("people").insert({
       first_name: firstName,
