@@ -48,7 +48,6 @@ const ALL_INDUSTRIES = [
   "Energy & Utilities",
 ];
 
-// Rename ALL_REGIONS to ALL_LOCATIONS for clarity if you want
 const ALL_LOCATIONS = [
   "North America",
   "Europe",
@@ -66,57 +65,54 @@ export default function SearchPage() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Main effect to pull results from Supabase
-  useEffect(() => {
-    async function fetchResults() {
-      setLoading(true);
+ useEffect(() => {
+  async function fetchResults() {
+    setLoading(true);
 
-     
-      const { data, error } = await supabase
-        .from("companies")
-        .select("id, name, website, industry, location, size, people(id)");
+    const { data, error } = await supabase
+      .from("companies")
+      .select(`
+        id,
+        name,
+        website,
+        industry,
+        location,
+        size,
+        people:people (
+          id,
+          first_name,
+          last_name,
+          title,
+          email,
+          phone,
+          linkedin_url,
+          verification_score
+        )
+      `);
 
-      setLoading(false);
+    setLoading(false);
 
-      if (error) {
-        setResults([]);
-        console.error("Supabase error", error);
-        return;
-      }
-
-      // 2. JS Filtering (to avoid 400s and fit your schema)
-      let filtered = (data ?? []).map((row) => ({
-        ...row,
-        contacts: row.people ? row.people.length : 0,
-      }));
-
-      // Industry filter
-      if (selectedIndustries.length > 0) {
-        filtered = filtered.filter((row) =>
-          selectedIndustries.includes(row.industry)
-        );
-      }
-      // Location filter (instead of region)
-      if (selectedLocations.length > 0) {
-        filtered = filtered.filter((row) =>
-          selectedLocations.includes(row.location)
-        );
-      }
-      // Search filter
-      if (searchTerm.trim()) {
-        const term = searchTerm.trim().toLowerCase();
-        filtered = filtered.filter(
-          (row) =>
-            row.name?.toLowerCase().includes(term) ||
-            row.industry?.toLowerCase().includes(term) ||
-            row.website?.toLowerCase().includes(term)
-        );
-      }
-      // Company size filter (skipped here; adjust if size is number)
-      setResults(filtered);
+    if (error) {
+      setResults([]);
+      console.error("Supabase error", error);
+      return;
     }
-    fetchResults();
-  }, [searchTerm, selectedIndustries, selectedLocations, companySize]);
+
+    let filtered = (data ?? []).map((row) => ({
+      ...row,
+      contacts: row.people ? row.people.length : 0,
+      people: row.people?.map(person => ({
+        ...person,
+        name: `${person.first_name} ${person.last_name}`,
+      })) || [],
+    }));
+
+    // Add your filters (industry, location, etc) here...
+
+    setResults(filtered);
+  }
+  fetchResults();
+}, [searchTerm, selectedIndustries, selectedLocations, companySize]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
