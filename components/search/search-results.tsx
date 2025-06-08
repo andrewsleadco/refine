@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  ExternalLink, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  ChevronDown, 
-  CheckCircle2, 
-  XCircle,
+import {
+  ExternalLink,
+  Mail,
+  Phone,
+  MapPin,
+  ChevronDown,
+  CheckCircle2,
   AlertCircle,
   Users
 } from "lucide-react";
@@ -19,7 +18,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -30,25 +29,24 @@ import {
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
+  DrawerTitle
 } from "@/components/ui/drawer";
 import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger,
+  TabsTrigger
 } from "@/components/ui/tabs";
 
 interface Company {
   id: number;
-  name: string;                // <- updated
+  name: string;
   website: string;
   industry: string;
   location: string;
   size: string;
   contacts: number;
-  verificationScore?: number;  // <- optional
+  verificationScore?: number;
 }
 
 interface SearchResultsProps {
@@ -83,7 +81,7 @@ export default function SearchResults({ results }: SearchResultsProps) {
       email: "john.smith@acmetech.com",
       phone: "+1 (555) 123-4567",
       emailVerified: true,
-      phoneVerified: true,
+      phoneVerified: true
     },
     {
       name: "Sarah Johnson",
@@ -91,7 +89,7 @@ export default function SearchResults({ results }: SearchResultsProps) {
       email: "sarah.j@acmetech.com",
       phone: "+1 (555) 987-6543",
       emailVerified: true,
-      phoneVerified: false,
+      phoneVerified: false
     },
     {
       name: "Michael Chen",
@@ -99,8 +97,8 @@ export default function SearchResults({ results }: SearchResultsProps) {
       email: "m.chen@acmetech.com",
       phone: "+1 (555) 456-7890",
       emailVerified: true,
-      phoneVerified: true,
-    },
+      phoneVerified: true
+    }
   ];
 
   const openCompanyDetails = (company: Company) => {
@@ -123,8 +121,8 @@ export default function SearchResults({ results }: SearchResultsProps) {
         </TableHeader>
         <TableBody>
           {results.map((company) => (
-            <span key={company.id}>
-              <TableRow className="cursor-pointer hover:bg-muted/50">
+            <>
+              <TableRow key={company.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell className="font-medium" onClick={() => openCompanyDetails(company)}>
                   <div className="flex items-center">
                     <Avatar className="h-9 w-9 mr-3 bg-primary/10">
@@ -137,7 +135,15 @@ export default function SearchResults({ results }: SearchResultsProps) {
                       <div className="text-sm text-muted-foreground flex items-center">
                         {company.website || "—"}
                         {company.website && (
-                          <ExternalLink className="ml-1 h-3 w-3" />
+                          <a
+                            href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-1"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
                         )}
                       </div>
                     </div>
@@ -160,6 +166,7 @@ export default function SearchResults({ results }: SearchResultsProps) {
                     size="sm"
                     onClick={() => toggleRow(company.id)}
                     className="h-8 w-8 p-0"
+                    tabIndex={-1}
                   >
                     <ChevronDown
                       className={`h-4 w-4 transition-transform ${
@@ -169,16 +176,15 @@ export default function SearchResults({ results }: SearchResultsProps) {
                   </Button>
                 </TableCell>
               </TableRow>
-              
               {expandedRow === company.id && (
-                <TableRow>
+                <TableRow key={`${company.id}-expanded`}>
                   <TableCell colSpan={7} className="p-0 border-t-0">
                     <div className="bg-muted/30 p-4">
                       <h3 className="font-medium mb-3">Top Contacts</h3>
                       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {mockContacts.map((contact, i) => (
-                          <div 
-                            key={i} 
+                          <div
+                            key={i}
                             className="bg-background rounded-lg border p-3 flex flex-col gap-2"
                           >
                             <div className="font-medium">{contact.name}</div>
@@ -213,11 +219,11 @@ export default function SearchResults({ results }: SearchResultsProps) {
                   </TableCell>
                 </TableRow>
               )}
-            </span>
+            </>
           ))}
         </TableBody>
       </Table>
-      
+
       {/* Company details drawer */}
       <Drawer open={!!selectedCompany} onOpenChange={(open) => !open && setSelectedCompany(null)}>
         <DrawerContent className="max-h-[85vh]">
@@ -229,22 +235,37 @@ export default function SearchResults({ results }: SearchResultsProps) {
               </Badge>
             </DrawerTitle>
             <DrawerDescription>
-              <a href={`https://${selectedCompany?.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center hover:underline">
+              <a
+                href={selectedCompany?.website
+                  ? selectedCompany.website.startsWith("http")
+                    ? selectedCompany.website
+                    : `https://${selectedCompany.website}`
+                  : "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center hover:underline"
+              >
                 {selectedCompany?.website}
                 {selectedCompany?.website && <ExternalLink className="ml-1 h-3 w-3" />}
               </a>
             </DrawerDescription>
           </DrawerHeader>
-          
+
           {selectedCompany && (
             <div className="px-4 pb-8">
               <Tabs defaultValue="overview">
                 <TabsList className="w-full mb-4">
-                  <TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger>
-                  <TabsTrigger value="contacts" className="flex-1">Contacts</TabsTrigger>
-                  <TabsTrigger value="verification" className="flex-1">Verification</TabsTrigger>
+                  <TabsTrigger value="overview" className="flex-1">
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="contacts" className="flex-1">
+                    Contacts
+                  </TabsTrigger>
+                  <TabsTrigger value="verification" className="flex-1">
+                    Verification
+                  </TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="overview" className="mt-0">
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
@@ -263,11 +284,14 @@ export default function SearchResults({ results }: SearchResultsProps) {
                         </div>
                       </div>
                     </div>
-                    
                     <div className="bg-muted rounded-lg p-4">
-                      <div className="text-sm text-muted-foreground mb-1">Verification Score</div>
+                      <div className="text-sm text-muted-foreground mb-1">
+                        Verification Score
+                      </div>
                       <div className="flex items-center mb-2">
-                        <div className={`text-lg font-medium ${getScoreColor(selectedCompany.verificationScore ?? 0)}`}>
+                        <div
+                          className={`text-lg font-medium ${getScoreColor(selectedCompany.verificationScore ?? 0)}`}
+                        >
                           {selectedCompany.verificationScore !== undefined
                             ? `${selectedCompany.verificationScore}%`
                             : "—"}
@@ -279,7 +303,6 @@ export default function SearchResults({ results }: SearchResultsProps) {
                         indicatorClassName={getScoreBg(selectedCompany.verificationScore ?? 0)}
                       />
                     </div>
-                    
                     <div className="bg-muted rounded-lg p-4">
                       <h3 className="font-medium mb-3">Company Information</h3>
                       <dl className="space-y-2">
@@ -303,14 +326,13 @@ export default function SearchResults({ results }: SearchResultsProps) {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="contacts" className="mt-0">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="font-medium">All Contacts ({selectedCompany.contacts})</h3>
                       <Button size="sm">Export Contacts</Button>
                     </div>
-                    
                     <div className="space-y-3">
                       {mockContacts.concat(mockContacts).map((contact, i) => (
                         <div key={i} className="bg-muted rounded-lg p-4">
@@ -319,14 +341,23 @@ export default function SearchResults({ results }: SearchResultsProps) {
                               <div className="font-medium">{contact.name}</div>
                               <div className="text-sm text-muted-foreground">{contact.title}</div>
                             </div>
-                            <Badge 
-                              variant={contact.emailVerified && contact.phoneVerified ? "default" : "outline"}
-                              className={contact.emailVerified && contact.phoneVerified ? "bg-green-500" : ""}
+                            <Badge
+                              variant={
+                                contact.emailVerified && contact.phoneVerified
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className={
+                                contact.emailVerified && contact.phoneVerified
+                                  ? "bg-green-500"
+                                  : ""
+                              }
                             >
-                              {contact.emailVerified && contact.phoneVerified ? "Fully Verified" : "Partially Verified"}
+                              {contact.emailVerified && contact.phoneVerified
+                                ? "Fully Verified"
+                                : "Partially Verified"}
                             </Badge>
                           </div>
-                          
                           <div className="grid grid-cols-2 gap-2 mt-3">
                             <div className="text-sm flex items-center gap-1">
                               <Mail className="h-3.5 w-3.5 text-muted-foreground" />
@@ -352,12 +383,11 @@ export default function SearchResults({ results }: SearchResultsProps) {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="verification" className="mt-0">
                   <div className="space-y-4">
                     <div className="bg-muted rounded-lg p-4">
                       <h3 className="font-medium mb-3">Verification Details</h3>
-                      
                       <div className="space-y-4">
                         <div>
                           <div className="flex justify-between mb-1">
@@ -369,7 +399,6 @@ export default function SearchResults({ results }: SearchResultsProps) {
                             12 of 12 email addresses verified
                           </div>
                         </div>
-                        
                         <div>
                           <div className="flex justify-between mb-1">
                             <div className="text-sm font-medium">Phone Verification</div>
@@ -380,7 +409,6 @@ export default function SearchResults({ results }: SearchResultsProps) {
                             10 of 12 phone numbers verified
                           </div>
                         </div>
-                        
                         <div>
                           <div className="flex justify-between mb-1">
                             <div className="text-sm font-medium">Address Verification</div>
@@ -391,7 +419,6 @@ export default function SearchResults({ results }: SearchResultsProps) {
                             Corporate address fully verified and standardized
                           </div>
                         </div>
-                        
                         <div>
                           <div className="flex justify-between mb-1">
                             <div className="text-sm font-medium">Data Freshness</div>
@@ -404,7 +431,6 @@ export default function SearchResults({ results }: SearchResultsProps) {
                         </div>
                       </div>
                     </div>
-                    
                     <div className="bg-muted rounded-lg p-4">
                       <h3 className="font-medium mb-3">Enrichment Sources</h3>
                       <ul className="space-y-2">
@@ -433,7 +459,6 @@ export default function SearchResults({ results }: SearchResultsProps) {
                   </div>
                 </TabsContent>
               </Tabs>
-              
               <div className="flex justify-between mt-8">
                 <DrawerClose asChild>
                   <Button variant="outline">Close</Button>
